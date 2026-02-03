@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verifier - Mass Mailer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1', // Indigo
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased bg-gray-50">
+
+    <!-- Navigation -->
+    <nav class="bg-white fixed w-full z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="index.html" class="flex-shrink-0 flex items-center">
+                        <i class="fa-solid fa-paper-plane text-brand-600 text-2xl mr-2"></i>
+                        <span class="font-bold text-xl tracking-tight text-gray-900">Mass Mailer</span>
+                    </a>
+                    <div class="hidden md:ml-10 md:flex md:space-x-8">
+                        <a href="index.html" class="text-gray-500 hover:text-brand-600 px-3 py-2 text-sm font-medium transition">Home</a>
+                        <a href="verify.html" class="text-brand-600 border-b-2 border-brand-600 px-3 py-2 text-sm font-medium transition">Email Verifier</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="pt-24 pb-12">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="text-center mb-10">
+                <h1 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                    Bulk Email Verifier
+                </h1>
+                <p class="mt-3 max-w-2xl mx-auto text-xl text-gray-500">
+                    Clean your list before sending to improve deliverability.
+                </p>
+            </div>
+
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <div class="p-6">
+                    <label for="emails" class="block text-sm font-medium text-gray-700 mb-2">Enter Emails (One per line)</label>
+                    <textarea id="emails" rows="10" class="shadow-sm focus:ring-brand-500 focus:border-brand-500 block w-full sm:text-sm border-gray-300 rounded-md border p-2 font-mono" placeholder="john@example.com&#10;sarah@test.com"></textarea>
+                    
+                    <div class="mt-4 flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            <span id="count">0</span> emails entered
+                        </div>
+                        <button id="verifyBtn" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500">
+                            Verify Emails
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 px-4 py-4 sm:px-6 border-t border-gray-200">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Results</h3>
+                    <div class="overflow-x-auto -mx-4 sm:mx-0">
+                        <div class="inline-block min-w-full py-2 align-middle px-4 sm:px-0">
+                            <table class="min-w-full divide-y divide-gray-200 border sm:border-0">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                        <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsBody" class="bg-white divide-y divide-gray-200">
+                                    <!-- Results will go here -->
+                                    <tr>
+                                        <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No results yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 text-right">
+                         <button id="downloadBtn" class="hidden w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
+                            <i class="fas fa-download mr-2"></i> Download Valid Emails
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const emailsInput = document.getElementById('emails');
+        const countSpan = document.getElementById('count');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const resultsBody = document.getElementById('resultsBody');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        let validEmails = [];
+
+        emailsInput.addEventListener('input', () => {
+            const lines = emailsInput.value.split('\n').filter(line => line.trim() !== '');
+            countSpan.innerText = lines.length;
+        });
+
+        verifyBtn.addEventListener('click', async () => {
+            const text = emailsInput.value;
+            const allEmails = text.split('\n').map(e => e.trim()).filter(e => e);
+            
+            if (allEmails.length === 0) {
+                alert("Please enter some emails.");
+                return;
+            }
+
+            verifyBtn.disabled = true;
+            verifyBtn.innerText = "Verifying...";
+            resultsBody.innerHTML = ''; // Clear previous results
+            validEmails = [];
+            downloadBtn.classList.add('hidden');
+            
+            const BATCH_SIZE = 5;
+            let processedCount = 0;
+            let hasError = false;
+
+            for (let i = 0; i < allEmails.length; i += BATCH_SIZE) {
+                const batch = allEmails.slice(i, i + BATCH_SIZE);
+                
+                // Show loading indicator for current batch if it's the first one
+                if (i === 0) {
+                    resultsBody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Verifying...</td></tr>';
+                } else {
+                     // Update loading text
+                     const loadingRow = document.getElementById('loadingRow');
+                     if(loadingRow) loadingRow.querySelector('td').innerText = `Verifying ${i + 1} to ${Math.min(i + BATCH_SIZE, allEmails.length)} of ${allEmails.length}...`;
+                }
+
+                try {
+                    const response = await fetch('/api/verify-bulk', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ emails: batch })
+                    });
+
+                    if (!response.ok) {
+                         throw new Error(`Server returned ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    // Remove loading row if exists
+                    const loadingRow = document.getElementById('loadingRow');
+                    if (loadingRow) loadingRow.remove();
+                    
+                    // If first batch, clear the "Verifying..." placeholder
+                    if (i === 0) resultsBody.innerHTML = '';
+
+                    if (data.results && data.results.length > 0) {
+                        data.results.forEach(res => {
+                            const tr = document.createElement('tr');
+                            let statusColor = 'text-red-600';
+                            let badgeColor = 'bg-red-100 text-red-800';
+                            
+                            if (res.status === 'Valid') {
+                                statusColor = 'text-green-600';
+                                badgeColor = 'bg-green-100 text-green-800';
+                                validEmails.push(res.email);
+                            } else if (res.status === 'Risky') {
+                                statusColor = 'text-yellow-600';
+                                badgeColor = 'bg-yellow-100 text-yellow-800';
+                            }
+
+                            tr.innerHTML = `
+                                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">${res.email}</td>
+                                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeColor}">${res.status}</span></td>
+                                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">${res.reason}</td>
+                            `;
+                            resultsBody.appendChild(tr);
+                        });
+                        
+                        if (validEmails.length > 0) {
+                            downloadBtn.classList.remove('hidden');
+                        }
+                    }
+                    
+                    // Add loading row back if more batches remain
+                    if (i + BATCH_SIZE < allEmails.length) {
+                        const tr = document.createElement('tr');
+                        tr.id = 'loadingRow';
+                        tr.innerHTML = `<td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Verifying next batch...</td>`;
+                        resultsBody.appendChild(tr);
+                    }
+
+                } catch (error) {
+                    console.error(error);
+                    let msg = error.message;
+                    if (msg === 'Failed to fetch') {
+                        msg = 'Connection Error: Is the server running?';
+                    }
+                    // Append error row
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td colspan="3" class="px-6 py-4 text-center text-sm text-red-500">Error with batch: ${msg}</td>`;
+                    resultsBody.appendChild(tr);
+                    hasError = true;
+                    // Don't break, try next batch? No, probably stop if server is down.
+                    if (msg.includes('Connection Error')) break;
+                }
+                
+                processedCount += batch.length;
+            }
+
+            verifyBtn.disabled = false;
+            verifyBtn.innerText = "Verify Emails";
+            
+            // Remove any remaining loading row
+            const loadingRow = document.getElementById('loadingRow');
+            if (loadingRow) loadingRow.remove();
+            
+            if (resultsBody.children.length === 0) {
+                 resultsBody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No results.</td></tr>';
+            }
+        });
+        
+        downloadBtn.addEventListener('click', () => {
+            const blob = new Blob([validEmails.join('\\n')], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'valid_emails.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+    </script>
+</body>
+</html>
